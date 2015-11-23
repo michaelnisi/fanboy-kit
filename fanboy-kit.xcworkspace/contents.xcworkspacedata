@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:../patron/Patron/Patron.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:../ola/Ola.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:FanboyKit/FanboyKit.xcodeproj">
+   </FileRef>
+</Workspace>
