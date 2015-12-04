@@ -11,6 +11,40 @@ import Patron
 
 public enum FanboyError: ErrorType {
   case UnexpectedResult(result: AnyObject?)
+  case CancelledByUser
+  case NoData
+  case OlaInitializationFailed
+  case InvalidTerm
+}
+
+func retypeError(error: ErrorType?) -> ErrorType? {
+  guard error != nil else {
+    return nil
+  }
+  do {
+    throw error!
+  } catch PatronError.CancelledByUser {
+    return FanboyError.CancelledByUser
+  } catch PatronError.NoData {
+    return FanboyError.NoData
+  } catch PatronError.OlaInitializationFailed {
+    return FanboyError.OlaInitializationFailed
+  } catch {
+    return error
+  }
+}
+
+func encodeTerm(term: String) throws -> String {
+  let trimmed = term.stringByTrimmingCharactersInSet(
+    NSCharacterSet.whitespaceCharacterSet())
+  guard trimmed != "" else {
+    throw FanboyError.InvalidTerm
+  }
+  guard let t = trimmed.stringByAddingPercentEncodingWithAllowedCharacters(
+    NSCharacterSet.URLHostAllowedCharacterSet()) else {
+    throw FanboyError.InvalidTerm
+  }
+  return t
 }
 
 public protocol FanboyService {
@@ -20,24 +54,15 @@ public protocol FanboyService {
   func suggest(term: String, cb: (ErrorType?, [String]?) -> Void) throws -> NSOperation
 }
 
-func defaultSession(scheme: String) throws -> NSURLSession {
-  let conf = NSURLSessionConfiguration.defaultSessionConfiguration()
-  conf.HTTPShouldUsePipelining = true
-  let sess = NSURLSession(configuration: conf)
-  return sess
-}
-
 public class Fanboy: FanboyService {
   let baseURL: NSURL
   let queue: NSOperationQueue
-  
-  lazy var session: NSURLSession = {
-    return try! defaultSession("http")
-  }()
+  let session: NSURLSession
 
-  public init(baseURL: NSURL, queue: NSOperationQueue) {
+  public init(baseURL: NSURL, queue: NSOperationQueue, session: NSURLSession) {
     self.baseURL = baseURL
     self.queue = queue
+    self.session = session
   }
   
   func operationWithRequest(req: NSURLRequest) -> PatronOperation {
@@ -56,7 +81,7 @@ public class Fanboy: FanboyService {
   
   func addOperation(op: PatronOperation, withCallback cb: (ErrorType?, [[String : AnyObject]]?) -> Void) {
     op.completionBlock = { [unowned op] in
-      if let er = op.error {
+      if let er = retypeError(op.error) {
         cb(er, nil)
       } else if let result = op.result as? [[String : AnyObject]] {
         cb(nil, result)
@@ -76,17 +101,19 @@ public class Fanboy: FanboyService {
   }
   
   public func search(term: String, cb: (ErrorType?, [[String : AnyObject]]?) -> Void) throws -> NSOperation {
-    let req = requestWithPath("/search/\(term)")
+    let t = try encodeTerm(term)
+    let req = requestWithPath("/search/\(t)")
     let op = operationWithRequest(req)
     addOperation(op, withCallback: cb)
     return op
   }
   
   public func suggest(term: String, cb: (ErrorType?, [String]?) -> Void) throws -> NSOperation {
-    let req = requestWithPath("/suggest/\(term)")
+    let t = try encodeTerm(term)
+    let req = requestWithPath("/suggest/\(t)")
     let op = operationWithRequest(req)
     op.completionBlock = { [unowned op] in
-      if let er = op.error {
+      if let er = retypeError(op.error) {
         cb(er, nil)
       } else if let suggestions = op.result as? [String] {
         cb(nil, suggestions)
@@ -102,7 +129,7 @@ public class Fanboy: FanboyService {
     let req = requestWithPath("/")
     let op = operationWithRequest(req)
     op.completionBlock = { [unowned op] in
-      if let er = op.error {
+      if let er = retypeError(op.error) {
         cb(er, nil)
       } else if let version = op.result?["version"] as? String {
         cb(nil, version)

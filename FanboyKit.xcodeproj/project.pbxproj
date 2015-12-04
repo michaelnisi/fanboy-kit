@@ -11,7 +11,7 @@
 		4CCC8BDA1C022B1D00120D07 /* FanboyKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CCC8BCF1C022B1D00120D07 /* FanboyKit.framework */; };
 		4CCC8BDF1C022B1D00120D07 /* FanboyKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCC8BDE1C022B1D00120D07 /* FanboyKitTests.swift */; };
 		4CCC8BEA1C022B4100120D07 /* index.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCC8BE91C022B4100120D07 /* index.swift */; };
-		4CCC8C621C03A63A00120D07 /* Patron.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CCC8C611C03A63A00120D07 /* Patron.framework */; };
+		4CCC8CAB1C076E2900120D07 /* Patron.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CCC8CAA1C076E2900120D07 /* Patron.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,7 +32,7 @@
 		4CCC8BDE1C022B1D00120D07 /* FanboyKitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FanboyKitTests.swift; sourceTree = "<group>"; };
 		4CCC8BE01C022B1D00120D07 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4CCC8BE91C022B4100120D07 /* index.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = index.swift; sourceTree = "<group>"; };
-		4CCC8C611C03A63A00120D07 /* Patron.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Patron.framework; path = "../../patron/Patron/build/Debug-iphoneos/Patron.framework"; sourceTree = "<group>"; };
+		4CCC8CAA1C076E2900120D07 /* Patron.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Patron.framework; path = "../../patron/build/Debug-iphoneos/Patron.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -40,7 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4CCC8C621C03A63A00120D07 /* Patron.framework in Frameworks */,
+				4CCC8CAB1C076E2900120D07 /* Patron.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,7 +58,7 @@
 		4CCC8BC51C022B1D00120D07 = {
 			isa = PBXGroup;
 			children = (
-				4CCC8C611C03A63A00120D07 /* Patron.framework */,
+				4CCC8CAA1C076E2900120D07 /* Patron.framework */,
 				4CCC8BD11C022B1D00120D07 /* FanboyKit */,
 				4CCC8BDD1C022B1D00120D07 /* FanboyKitTests */,
 				4CCC8BD01C022B1D00120D07 /* Products */,
@@ -155,7 +155,6 @@
 				TargetAttributes = {
 					4CCC8BCE1C022B1D00120D07 = {
 						CreatedOnToolsVersion = 7.1.1;
-						DevelopmentTeam = X23V32HT8X;
 					};
 					4CCC8BD81C022B1D00120D07 = {
 						CreatedOnToolsVersion = 7.1.1;
@@ -244,7 +243,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -292,7 +291,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -321,10 +320,11 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 2;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = FanboyKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.michaelnisi.FanboyKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -340,10 +340,11 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 2;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = FanboyKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.michaelnisi.FanboyKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
