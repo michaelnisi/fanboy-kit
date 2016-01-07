@@ -25,21 +25,18 @@ func freshSession () -> NSURLSession {
 class FanboyFailureTests: XCTestCase {
   
   var session: NSURLSession!
-  var queue: NSOperationQueue!
   var svc: FanboyService!
+  var queue: dispatch_queue_t!
   
   override func setUp() {
     super.setUp()
-    let baseURL: NSURL = NSURL(string: "http://localhost:8385")!
-    queue = NSOperationQueue()
+    queue = dispatch_queue_create("com.michaelnisi.patron.json", DISPATCH_QUEUE_CONCURRENT)
     session = freshSession()
-    svc = Fanboy(baseURL: baseURL, queue: queue, session: session)
+    let url = NSURL(string: "http://localhost:8385")!
+    svc = Fanboy(URL: url, queue: queue, session: session)
   }
   
   override func tearDown() {
-    session.invalidateAndCancel()
-    queue.cancelAllOperations()
-    svc = nil
     super.tearDown()
   }
 
@@ -93,20 +90,19 @@ class FanboyFailureTests: XCTestCase {
 class FanboySuccessTests: XCTestCase {
   
   var session: NSURLSession!
-  var queue: NSOperationQueue!
   var svc: FanboyService!
+  var queue: dispatch_queue_t!
   
   override func setUp() {
     super.setUp()
-    queue = NSOperationQueue()
+    queue = dispatch_queue_create("com.michaelnisi.patron.json", DISPATCH_QUEUE_CONCURRENT)
     session = freshSession()
-    let baseURL = NSURL(string: "http://localhost:8383")!
-    svc = Fanboy(baseURL: baseURL, queue: queue, session: session)
+    let url = NSURL(string: "http://localhost:8383")!
+    svc = Fanboy(URL: url, queue: queue, session: session)
   }
   
   override func tearDown() {
     session.invalidateAndCancel()
-    queue.cancelAllOperations()
     svc = nil
     super.tearDown()
   }
@@ -170,9 +166,9 @@ class FanboySuccessTests: XCTestCase {
     let names = self.names
     let guids = ["528458508", "974240842"]
     
-    // These seem to get cached rather agressively.
+    // These get cached rather agressively.
     
-      try! svc.lookup(guids) { error, feeds in
+    try! svc.lookup(guids) { error, feeds in
       XCTAssertNil(error)
       XCTAssertEqual(feeds!.count, 2)
       feeds!.forEach() { feed in
@@ -273,9 +269,9 @@ class FanboySuccessTests: XCTestCase {
   
   func testVersion() {
     let exp = self.expectationWithDescription("version")
-    try! svc.version() { error, version in
+    try! svc.version { error, version in
       XCTAssertNil(error)
-      XCTAssertEqual(version, "2.0.3")
+      XCTAssertEqual(version, "2.0.4")
       exp.fulfill()
     }
     self.waitForExpectationsWithTimeout(10) { er in
@@ -291,7 +287,7 @@ class FanboySuccessTests: XCTestCase {
         throw error!
       } catch FanboyError.CancelledByUser {
       } catch {
-        XCTFail("should be expected error")
+        XCTFail("should not be unexpected error")
       }
       XCTAssertNil(version)
       exp.fulfill()

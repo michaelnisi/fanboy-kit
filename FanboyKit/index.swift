@@ -6,29 +6,29 @@
 //  Copyright © 2015 Michael Nisi. All rights reserved.
 //
 
+// TODO: Document FanboyKit
+
 import Foundation
 import Patron
 
 public enum FanboyError: ErrorType {
   case UnexpectedResult(result: AnyObject?)
   case CancelledByUser
-  case NoData
-  case OlaInitializationFailed
   case InvalidTerm
 }
 
+/// Make FanboyError types from NSError types.
 func retypeError(error: ErrorType?) -> ErrorType? {
   guard error != nil else {
     return nil
   }
   do {
     throw error!
-  } catch PatronError.CancelledByUser {
-    return FanboyError.CancelledByUser
-  } catch PatronError.NoData {
-    return FanboyError.NoData
-  } catch PatronError.OlaInitializationFailed {
-    return FanboyError.OlaInitializationFailed
+  } catch let error as NSError {
+    switch error.code {
+    case -999: return FanboyError.CancelledByUser
+    default: return error
+    }
   } catch {
     return error
   }
@@ -48,96 +48,88 @@ func encodeTerm(term: String) throws -> String {
 }
 
 public protocol FanboyService {
-  func version(cb: (ErrorType?, String?) -> Void) throws -> NSOperation
-  func search(term: String, cb: (ErrorType?, [[String:AnyObject]]?) -> Void) throws -> NSOperation
-  func lookup(guids: [String], cb: (ErrorType?, [[String : AnyObject]]?) -> Void) throws -> NSOperation
-  func suggest(term: String, cb: (ErrorType?, [String]?) -> Void) throws -> NSOperation
+  func version(cb: (ErrorType?, String?) -> Void) throws -> NSURLSessionTask
+  func search(term: String, cb: (ErrorType?, [[String:AnyObject]]?) -> Void) throws -> NSURLSessionTask
+  func lookup(guids: [String], cb: (ErrorType?, [[String : AnyObject]]?) -> Void) throws -> NSURLSessionTask
+  func suggest(term: String, cb: (ErrorType?, [String]?) -> Void) throws -> NSURLSessionTask
 }
 
-public class Fanboy: FanboyService {
-  let baseURL: NSURL
-  let queue: NSOperationQueue
+public final class Fanboy: FanboyService {
+  
+  let patron: Patron
   let session: NSURLSession
 
-  public init(baseURL: NSURL, queue: NSOperationQueue, session: NSURLSession) {
-    self.baseURL = baseURL
-    self.queue = queue
+  public init (URL: NSURL, queue: dispatch_queue_t, session: NSURLSession) {
     self.session = session
+    self.patron = PatronClient(URL: URL, queue: queue, session: session)
   }
   
-  func operationWithRequest(req: NSURLRequest) -> PatronOperation {
-    let q = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)
-    return PatronOperation(session: session, request: req, queue: q)
-  }
-  
-  func urlWithPath(path: String) -> NSURL {
-    return NSURL(string: path, relativeToURL: baseURL)!
-  }
-  
-  func requestWithPath(path: String) -> NSURLRequest {
-    let url = urlWithPath(path)
-    return NSURLRequest(URL: url)
-  }
-  
-  func addOperation(op: PatronOperation, withCallback cb: (ErrorType?, [[String : AnyObject]]?) -> Void) {
-    op.completionBlock = { [unowned op] in
-      if let er = retypeError(op.error) {
-        cb(er, nil)
-      } else if let result = op.result as? [[String : AnyObject]] {
-        cb(nil, result)
-      } else {
-        cb(FanboyError.UnexpectedResult(result: op.result), nil)
-      }
-    }
-    queue.addOperation(op)
-  }
-  
-  public func lookup(guids: [String], cb: (ErrorType?, [[String : AnyObject]]?) -> Void) throws -> NSOperation {
-    let query = guids.joinWithSeparator(",")
-    let req = requestWithPath("/lookup/\(query)")
-    let op = operationWithRequest(req)
-    addOperation(op, withCallback: cb)
-    return op
-  }
-  
-  public func search(term: String, cb: (ErrorType?, [[String : AnyObject]]?) -> Void) throws -> NSOperation {
-    let t = try encodeTerm(term)
-    let req = requestWithPath("/search/\(t)")
-    let op = operationWithRequest(req)
-    addOperation(op, withCallback: cb)
-    return op
-  }
-  
-  public func suggest(term: String, cb: (ErrorType?, [String]?) -> Void) throws -> NSOperation {
-    let t = try encodeTerm(term)
-    let req = requestWithPath("/suggest/\(t)")
-    let op = operationWithRequest(req)
-    op.completionBlock = { [unowned op] in
-      if let er = retypeError(op.error) {
-        cb(er, nil)
-      } else if let suggestions = op.result as? [String] {
-        cb(nil, suggestions)
-      } else {
-        cb(FanboyError.UnexpectedResult(result: op.result), nil)
-      }
-    }
-    queue.addOperation(op)
-    return op
+  deinit {
+    session.invalidateAndCancel()
   }
 
-  public func version(cb: (ErrorType?, String?) -> Void) throws -> NSOperation {
-    let req = requestWithPath("/")
-    let op = operationWithRequest(req)
-    op.completionBlock = { [unowned op] in
-      if let er = retypeError(op.error) {
+  func getPath(
+    path: String,
+    cb: (ErrorType?,
+    [[String:AnyObject]]?) -> Void
+  ) throws -> NSURLSessionTask {
+    return try patron.get(path) { json, response, error in
+      if let er = retypeError(error) {
         cb(er, nil)
-      } else if let version = op.result?["version"] as? String {
-        cb(nil, version)
+      } else if let result = json as? [[String:AnyObject]] {
+        cb(nil, result)
       } else {
-        cb(FanboyError.UnexpectedResult(result: op.result), nil)
+        cb(FanboyError.UnexpectedResult(result: json), nil)
       }
     }
-    queue.addOperation(op)
-    return op
+  }
+  
+  public func lookup(
+    guids: [String],
+    cb: (ErrorType?,
+    [[String:AnyObject]]?) -> Void
+  ) throws -> NSURLSessionTask {
+    let query = guids.joinWithSeparator(",")
+    let path = "/lookup/\(query)"
+    return try getPath(path, cb: cb)
+  }
+  
+  public func search(
+    term: String,
+    cb: (ErrorType?,
+    [[String:AnyObject]]?) -> Void
+  ) throws -> NSURLSessionTask {
+    let t = try encodeTerm(term)
+    let path = "/search/\(t)"
+    return try getPath(path, cb: cb)
+  }
+  
+  public func suggest(
+    term: String,
+    cb: (ErrorType?, [String]?) -> Void
+  ) throws -> NSURLSessionTask {
+    let t = try encodeTerm(term)
+    let path = "/suggest/\(t)"
+    return try patron.get(path) { json, response, error in
+      if let er = retypeError(error) {
+        cb(er, nil)
+      } else if let result = json as? [String] {
+        cb(nil, result)
+      } else {
+        cb(FanboyError.UnexpectedResult(result: json), nil)
+      }
+    }
+  }
+  
+  public func version(cb: (ErrorType?, String?) -> Void) throws -> NSURLSessionTask {
+    return try patron.get("/") { json, response, error in
+      if let er = retypeError(error) {
+        cb(er, nil)
+      } else if let version = json?["version"] as? String {
+        cb(nil, version)
+      } else {
+        cb(FanboyError.UnexpectedResult(result: json), nil)
+      }
+    }
   }
 }
