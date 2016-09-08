@@ -7,33 +7,63 @@
 //
 
 import XCTest
+import Patron
 @testable import FanboyKit
 
-func delay(ms: Int64 = Int64(arc4random_uniform(10)), cb: () -> Void) {
+private func delay(ms: Int64 = Int64(arc4random_uniform(10)), cb: () -> Void) {
   let delta = ms * Int64(NSEC_PER_MSEC)
   let when = dispatch_time(DISPATCH_TIME_NOW, delta)
   dispatch_after(when, dispatch_get_main_queue(), cb)
 }
 
-func freshSession () -> NSURLSession {
+private func freshSession() -> NSURLSession {
   let conf = NSURLSessionConfiguration.defaultSessionConfiguration()
   conf.HTTPShouldUsePipelining = true
   conf.requestCachePolicy = .ReloadIgnoringLocalCacheData
   return NSURLSession(configuration: conf)
 }
 
-class FanboyFailureTests: XCTestCase {
+private func freshFanboy(url: NSURL) -> Fanboy {
+  let target = dispatch_get_main_queue()
+  let session = freshSession()
+  let client = Patron(URL: url, session: session, target: target)
+  return Fanboy(client: client)
+}
+
+final class InternalTests: XCTestCase {
+  func testEncodeTerm() {
+    let wanted = [
+      "abc",
+      "abc",
+      "abc",
+      "abc%20def",
+      "abc%20%20def" // TODO: Should inner whitespace be removed here
+    ]
+    let found = [
+      "abc",
+      " abc",
+      " abc ",
+      " abc def ",
+      " abc  def"
+      ].map {
+      try! encodeTerm($0)
+    }
+    for (i, wantedTerm) in wanted.enumerate() {
+      let foundTerm = found[i]
+      XCTAssertEqual(foundTerm, wantedTerm)
+    }
+  }
+}
+
+final class FanboyFailureTests: XCTestCase {
   
-  var session: NSURLSession!
   var svc: FanboyService!
-  var queue: dispatch_queue_t!
   
   override func setUp() {
     super.setUp()
-    queue = dispatch_queue_create("com.michaelnisi.patron.json", DISPATCH_QUEUE_CONCURRENT)
-    session = freshSession()
+    
     let url = NSURL(string: "http://localhost:8385")!
-    svc = Fanboy(URL: url, queue: queue, session: session)
+    svc = freshFanboy(url)
   }
   
   override func tearDown() {
@@ -45,6 +75,10 @@ class FanboyFailureTests: XCTestCase {
       let er = error as! NSError
       XCTAssertEqual(er.code, -1004)
       XCTAssertNil(result)
+      
+      let (code, _) = svc.status!
+      XCTAssertEqual(code, er.code)
+      
       exp.fulfill()
     }
     return cb
@@ -62,7 +96,7 @@ class FanboyFailureTests: XCTestCase {
   func testLookup() {
     let exp = self.expectationWithDescription("lookup")
     let cb = callbackWithExpression(exp)
-    try! svc.lookup(["528458508", "974240842"], cb: cb)
+    svc.lookup(["528458508", "974240842"], cb: cb)
     self.waitForExpectationsWithTimeout(10) { er in
       XCTAssertNil(er)
     }
@@ -80,7 +114,7 @@ class FanboyFailureTests: XCTestCase {
   func testVersion() {
     let exp = self.expectationWithDescription("version")
     let cb = callbackWithExpression(exp)
-    try! svc.version(cb)
+    svc.version(cb)
     self.waitForExpectationsWithTimeout(10) { er in
       XCTAssertNil(er)
     }
@@ -89,22 +123,22 @@ class FanboyFailureTests: XCTestCase {
 
 class FanboySuccessTests: XCTestCase {
   
-  var session: NSURLSession!
   var svc: FanboyService!
-  var queue: dispatch_queue_t!
   
   override func setUp() {
     super.setUp()
-    queue = dispatch_queue_create("com.michaelnisi.patron.json", DISPATCH_QUEUE_CONCURRENT)
-    session = freshSession()
+
     let url = NSURL(string: "http://localhost:8383")!
-    svc = Fanboy(URL: url, queue: queue, session: session)
+    svc = freshFanboy(url)
   }
   
   override func tearDown() {
-    session.invalidateAndCancel()
     svc = nil
     super.tearDown()
+  }
+  
+  func testHost() {
+    XCTAssertEqual(svc.host, "localhost")
   }
   
   func testSuggest() {
@@ -112,7 +146,7 @@ class FanboySuccessTests: XCTestCase {
     func next() {
       try! svc.suggest("f") { error, terms in
         XCTAssertNil(error)
-        XCTAssertEqual(terms!, ["fireball"])
+        XCTAssert(terms!.contains("fireball"))
         exp.fulfill()
       }
     }
@@ -132,7 +166,7 @@ class FanboySuccessTests: XCTestCase {
       do {
         try svc.suggest(q) { _, _ in }
       } catch FanboyError.InvalidTerm {
-        count++
+        count += 1
       } catch {
         XCTFail("should not throw unexpected error")
       }
@@ -168,7 +202,7 @@ class FanboySuccessTests: XCTestCase {
     
     // These get cached rather agressively.
     
-    try! svc.lookup(guids) { error, feeds in
+    svc.lookup(guids) { error, feeds in
       XCTAssertNil(error)
       XCTAssertEqual(feeds!.count, 2)
       feeds!.forEach() { feed in
@@ -187,7 +221,7 @@ class FanboySuccessTests: XCTestCase {
     let svc = self.svc!
     let exp = self.expectationWithDescription("lookup")
     let guids = ["528458508", "974240842"]
-    let op = try! svc.lookup(guids) { error, feeds in
+    let op = svc.lookup(guids) { error, feeds in
       defer {
         exp.fulfill()
       }
@@ -234,7 +268,7 @@ class FanboySuccessTests: XCTestCase {
       do {
         try svc.search(query) { _, _ in }
       } catch FanboyError.InvalidTerm {
-        count++
+        count += 1
       } catch {
         XCTFail("should not throw unexpected error")
       }
@@ -269,9 +303,9 @@ class FanboySuccessTests: XCTestCase {
   
   func testVersion() {
     let exp = self.expectationWithDescription("version")
-    try! svc.version { error, version in
+    svc.version { error, version in
       XCTAssertNil(error)
-      XCTAssertEqual(version, "2.0.4")
+      XCTAssertEqual(version, "2.0.6")
       exp.fulfill()
     }
     self.waitForExpectationsWithTimeout(10) { er in
@@ -279,10 +313,10 @@ class FanboySuccessTests: XCTestCase {
     }
   }
   
-  func testVersionCancel () {
+  func testVersionCancel() {
     let svc = self.svc!
     let exp = self.expectationWithDescription("version")
-    let op = try! svc.version { error, version in
+    let op = svc.version { error, version in
       do {
         throw error!
       } catch FanboyError.CancelledByUser {
