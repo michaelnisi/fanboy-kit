@@ -17,9 +17,6 @@ public enum FanboyError: Error {
   case invalidTerm
 }
 
-// TODO: Consider putting errors last
-// TODO: Use @discardableResult in Patron and MangerKit too
-
 /// Defines the fanboy remote service API.
 public protocol FanboyService {
   var host: String { get }
@@ -100,7 +97,7 @@ public final class Fanboy: FanboyService {
     cb: @escaping (Error?,
     [[String:AnyObject]]?) -> Void
   ) -> URLSessionTask {
-    return client.get(path) { json, response, error in
+    return client.get(path: path) { json, response, error in
       if let er = retypeError(error) {
         cb(er, nil)
       } else if let result = json as? [[String:AnyObject]] {
@@ -152,7 +149,7 @@ public final class Fanboy: FanboyService {
   ) throws -> URLSessionTask {
     let t = try encodeTerm(term)
     let path = "/suggest/\(t)"
-    return client.get(path) { json, response, error in
+    return client.get(path: path) { json, response, error in
       if let er = retypeError(error) {
         cb(er, nil)
       } else if let result = json as? [String] {
@@ -167,7 +164,7 @@ public final class Fanboy: FanboyService {
   ///
   /// - parameter cb: The callback receiving error and version string.
   public func version(_ cb: @escaping (Error?, String?) -> Void) -> URLSessionTask {
-    return client.get("/") { json, response, error in
+    return client.get(path: "/") { json, response, error in
       if let er = retypeError(error) {
         cb(er, nil)
       } else if let version = json?["version"] as? String {
