@@ -11,46 +11,45 @@ import Patron
 
 // MARK: API
 
-public enum FanboyError: ErrorType {
-  case UnexpectedResult(result: AnyObject?)
-  case CancelledByUser
-  case InvalidTerm
+public enum FanboyError: Error {
+  case unexpectedResult(result: AnyObject?)
+  case cancelledByUser
+  case invalidTerm
 }
-
-// TODO: Consider putting errors last
 
 /// Defines the fanboy remote service API.
 public protocol FanboyService {
-  var host: String { get }
-  var status: (Int, NSTimeInterval)? { get }
+  var client: JSONService { get }
   
-  func version(cb: (ErrorType?, String?) -> Void) -> NSURLSessionTask
+  @discardableResult func version(
+    _ cb: @escaping (Error?, String?) -> Void
+  ) -> URLSessionTask
   
-  func search(
-    term: String,
-    cb: (ErrorType?, [[String : AnyObject]]?) -> Void
-  ) throws -> NSURLSessionTask
+  @discardableResult func search(
+    _ term: String,
+    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+  ) throws -> URLSessionTask
   
-  func lookup(
-    guids: [String],
-    cb: (ErrorType?, [[String : AnyObject]]?) -> Void
-  ) -> NSURLSessionTask
+  @discardableResult func lookup(
+    _ guids: [String],
+    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+  ) -> URLSessionTask
   
-  func suggest(
-    term: String,
-    cb: (ErrorType?, [String]?) -> Void
-  ) throws -> NSURLSessionTask
+  @discardableResult func suggest(
+    _ term: String,
+    cb: @escaping (Error?, [String]?) -> Void
+  ) throws -> URLSessionTask
 }
 
 // MARK: -
 
 /// Transform errors.
-private func retypeError(error: ErrorType?) -> ErrorType? {
+private func retypeError(_ error: Error?) -> Error? {
   guard let er = error as? NSError else {
     return error
   }
   switch er.code {
-  case -999: return FanboyError.CancelledByUser
+  case -999: return FanboyError.cancelledByUser
   default: return er
   }
 }
@@ -61,29 +60,20 @@ private func retypeError(error: ErrorType?) -> ErrorType? {
 /// - parameter term: The term to encode.
 ///
 /// - throws: `FanboyError.InvalidTerm`
-func encodeTerm(term: String) throws -> String {
-  let ws = NSCharacterSet.whitespaceCharacterSet()
-  let trimmed = term.stringByTrimmingCharactersInSet(ws)
+func encodeTerm(_ term: String) throws -> String {
+  let ws = CharacterSet.whitespaces
+  let trimmed = term.trimmingCharacters(in: ws)
   guard !trimmed.isEmpty else {
-    throw FanboyError.InvalidTerm
+    throw FanboyError.invalidTerm
   }
-  let url = NSCharacterSet.URLHostAllowedCharacterSet()
-  return trimmed.stringByAddingPercentEncodingWithAllowedCharacters(url)!
+  let url = CharacterSet.urlHostAllowed
+  return trimmed.addingPercentEncoding(withAllowedCharacters: url)!
 }
 
 public final class Fanboy: FanboyService {
   
-  let client: JSONService
-
-  /// The host of the remote server.
-  public var host: String {
-    get { return client.host }
-  }
-  
-  /// The latest status of the service.
-  public var status: (Int, NSTimeInterval)? {
-    get { return client.status }
-  }
+  /// The underlying JSON service client.
+  public let client: JSONService
 
   /// Creates a `Fanboy` object with the specified client.
   ///
@@ -93,17 +83,17 @@ public final class Fanboy: FanboyService {
   }
   
   private func request(
-    path: String,
-    cb: (ErrorType?,
-    [[String:AnyObject]]?) -> Void
-  ) -> NSURLSessionTask {
-    return client.get(path) { json, response, error in
+    _ path: String,
+    cb: @escaping (Error?,
+    [[String : AnyObject]]?) -> Void
+  ) -> URLSessionTask {
+    return client.get(path: path) { json, response, error in
       if let er = retypeError(error) {
         cb(er, nil)
-      } else if let result = json as? [[String:AnyObject]] {
+      } else if let result = json as? [[String : AnyObject]] {
         cb(nil, result)
       } else {
-        cb(FanboyError.UnexpectedResult(result: json), nil)
+        cb(FanboyError.unexpectedResult(result: json), nil)
       }
     }
   }
@@ -113,10 +103,10 @@ public final class Fanboy: FanboyService {
   /// - parameter guids: The GUIDs of the feeds to fetch.
   /// - parameter cb: The callback to handle error and results.
   public func lookup(
-    guids: [String],
-    cb: (ErrorType?, [[String : AnyObject]]?) -> Void
-  ) -> NSURLSessionTask {
-    let query = guids.joinWithSeparator(",")
+    _ guids: [String],
+    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+  ) -> URLSessionTask {
+    let query = guids.joined(separator: ",")
     let path = "/lookup/\(query)"
     return request(path, cb: cb)
   }
@@ -127,9 +117,9 @@ public final class Fanboy: FanboyService {
   /// search for.
   /// - parameter cb: The callback to handle error and results.
   public func search(
-    term: String,
-    cb: (ErrorType?, [[String : AnyObject]]?) -> Void
-  ) throws -> NSURLSessionTask {
+    _ term: String,
+    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+  ) throws -> URLSessionTask {
     let t = try encodeTerm(term)
     let path = "/search/\(t)"
     return request(path, cb: cb)
@@ -144,18 +134,18 @@ public final class Fanboy: FanboyService {
   ///
   /// - throws: Throws if `term ` could not be encoded to a valid search term.
   public func suggest(
-    term: String,
-    cb: (ErrorType?, [String]?) -> Void
-  ) throws -> NSURLSessionTask {
+    _ term: String,
+    cb: @escaping (Error?, [String]?) -> Void
+  ) throws -> URLSessionTask {
     let t = try encodeTerm(term)
     let path = "/suggest/\(t)"
-    return client.get(path) { json, response, error in
+    return client.get(path: path) { json, response, error in
       if let er = retypeError(error) {
         cb(er, nil)
       } else if let result = json as? [String] {
         cb(nil, result)
       } else {
-        cb(FanboyError.UnexpectedResult(result: json), nil)
+        cb(FanboyError.unexpectedResult(result: json), nil)
       }
     }
   }
@@ -163,14 +153,15 @@ public final class Fanboy: FanboyService {
   /// Request the version of the remote service.
   ///
   /// - parameter cb: The callback receiving error and version string.
-  public func version(cb: (ErrorType?, String?) -> Void) -> NSURLSessionTask {
-    return client.get("/") { json, response, error in
+  public func version(
+    _ cb: @escaping (Error?, String?) -> Void) -> URLSessionTask {
+    return client.get(path: "/") { json, response, error in
       if let er = retypeError(error) {
         cb(er, nil)
       } else if let version = json?["version"] as? String {
         cb(nil, version)
       } else {
-        cb(FanboyError.UnexpectedResult(result: json), nil)
+        cb(FanboyError.unexpectedResult(result: json), nil)
       }
     }
   }
