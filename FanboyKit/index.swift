@@ -98,6 +98,8 @@ public final class Fanboy: FanboyService {
     }
   }
   
+  // TODO: Add limit parameter
+  
   /// Lookup specific podcast feeds by their iTunes GUIDs.
   ///
   /// - parameter guids: The GUIDs of the feeds to fetch.
@@ -110,6 +112,8 @@ public final class Fanboy: FanboyService {
     let path = "/lookup/\(query)"
     return request(path, cb: cb)
   }
+  
+  // TODO: Add limit parameter
   
   /// Search feeds matching the specified `term`.
   ///
@@ -124,6 +128,8 @@ public final class Fanboy: FanboyService {
     let path = "/search/\(t)"
     return request(path, cb: cb)
   }
+  
+  // TODO: Add limit parameter
   
   /// Request suggestions for a given search term or fragment thereof.
   ///

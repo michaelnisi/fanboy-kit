@@ -11,7 +11,7 @@
 		4CCC8BDA1C022B1D00120D07 /* FanboyKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CCC8BCF1C022B1D00120D07 /* FanboyKit.framework */; };
 		4CCC8BDF1C022B1D00120D07 /* FanboyKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCC8BDE1C022B1D00120D07 /* FanboyKitTests.swift */; };
 		4CCC8BEA1C022B4100120D07 /* index.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCC8BE91C022B4100120D07 /* index.swift */; };
-		4ED6AE271D587C8600DCBEBA /* Patron.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4ED6AE261D587C8600DCBEBA /* Patron.framework */; };
+		4E34B53A1E3D11F6007517FB /* Patron.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E34B5391E3D11F6007517FB /* Patron.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,7 +32,7 @@
 		4CCC8BDE1C022B1D00120D07 /* FanboyKitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FanboyKitTests.swift; sourceTree = "<group>"; };
 		4CCC8BE01C022B1D00120D07 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4CCC8BE91C022B4100120D07 /* index.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = index.swift; sourceTree = "<group>"; };
-		4ED6AE261D587C8600DCBEBA /* Patron.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Patron.framework; path = "../../Library/Developer/Xcode/DerivedData/podest-cxrwkbilpoiklmejexzjehpjqzub/Build/Products/Debug-iphoneos/Patron.framework"; sourceTree = "<group>"; };
+		4E34B5391E3D11F6007517FB /* Patron.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Patron.framework; path = "../../Library/Developer/Xcode/DerivedData/podest-cxrwkbilpoiklmejexzjehpjqzub/Build/Products/Debug-iphoneos/Patron.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -40,7 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4ED6AE271D587C8600DCBEBA /* Patron.framework in Frameworks */,
+				4E34B53A1E3D11F6007517FB /* Patron.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,10 +58,10 @@
 		4CCC8BC51C022B1D00120D07 = {
 			isa = PBXGroup;
 			children = (
-				4ED6AE261D587C8600DCBEBA /* Patron.framework */,
 				4CCC8BD11C022B1D00120D07 /* FanboyKit */,
 				4CCC8BDD1C022B1D00120D07 /* FanboyKitTests */,
 				4CCC8BD01C022B1D00120D07 /* Products */,
+				4E34B5381E3D11F6007517FB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -91,6 +91,14 @@
 				4CCC8BE01C022B1D00120D07 /* Info.plist */,
 			);
 			path = FanboyKitTests;
+			sourceTree = "<group>";
+		};
+		4E34B5381E3D11F6007517FB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4E34B5391E3D11F6007517FB /* Patron.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
