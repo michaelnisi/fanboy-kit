@@ -17,27 +17,28 @@ public enum FanboyError: Error {
   case invalidTerm
 }
 
-/// Defines the fanboy remote service API.
+/// A client for the fanboy-http, a caching proxy of the iTunes Search API.
 public protocol FanboyService {
   var client: JSONService { get }
-  
+
   @discardableResult func version(
-    _ cb: @escaping (Error?, String?) -> Void
+    completionHandler cb: @escaping (_ version: String?, Error?) -> Void
   ) -> URLSessionTask
-  
+
   @discardableResult func search(
-    _ term: String,
-    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+    term: String,
+    completionHandler cb: @escaping (_ podcasts: [[String : AnyObject]]?, _ error: Error?) -> Void
   ) throws -> URLSessionTask
-  
+
   @discardableResult func lookup(
-    _ guids: [String],
-    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+    guids: [String],
+    completionHandler cb: @escaping (_ podcasts: [[String : AnyObject]]?, _ error: Error?) -> Void
   ) -> URLSessionTask
-  
-  @discardableResult func suggest(
-    _ term: String,
-    cb: @escaping (Error?, [String]?) -> Void
+
+  @discardableResult func suggestions(
+    matching: String,
+    limit: Int,
+    completionHandler cb: @escaping (_ terms: [String]?, _ error: Error?) -> Void
   ) throws -> URLSessionTask
 }
 
@@ -59,6 +60,8 @@ private func retypeError(_ error: Error?) -> Error? {
 ///
 /// - parameter term: The term to encode.
 ///
+/// - returns: URL encoded search term.
+///
 /// - throws: `FanboyError.InvalidTerm`
 func encodeTerm(_ term: String) throws -> String {
   let ws = CharacterSet.whitespaces
@@ -71,7 +74,7 @@ func encodeTerm(_ term: String) throws -> String {
 }
 
 public final class Fanboy: FanboyService {
-  
+
   /// The underlying JSON service client.
   public let client: JSONService
 
@@ -81,93 +84,108 @@ public final class Fanboy: FanboyService {
   public init(client: JSONService) {
     self.client = client
   }
-  
+
   private func request(
     _ path: String,
-    cb: @escaping (Error?,
-    [[String : AnyObject]]?) -> Void
+    cb: @escaping ([[String : AnyObject]]?, Error?) -> Void
   ) -> URLSessionTask {
     return client.get(path: path) { json, response, error in
       if let er = retypeError(error) {
-        cb(er, nil)
+        cb(nil, er)
       } else if let result = json as? [[String : AnyObject]] {
-        cb(nil, result)
+        cb(result, nil)
       } else {
-        cb(FanboyError.unexpectedResult(result: json), nil)
+        let er = FanboyError.unexpectedResult(result: json)
+        cb(nil, er)
       }
     }
   }
-  
-  // TODO: Add limit parameter
-  
+
   /// Lookup specific podcast feeds by their iTunes GUIDs.
   ///
-  /// - parameter guids: The GUIDs of the feeds to fetch.
-  /// - parameter cb: The callback to handle error and results.
+  /// - parameter guids: The GUIDs of the podcasts to lookup in iTunes.
+  /// - parameter completionHandler: A block with following parameters:
+  /// - parameter error: An error object, or nil.
+  /// - parameter podcasts: The podcasts with the requested `guids`.
+  ///
+  /// - returns: Returns the according URL session task.
   public func lookup(
-    _ guids: [String],
-    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+    guids: [String],
+    completionHandler cb: @escaping (_ podcasts: [[String : AnyObject]]?, _ error: Error?) -> Void
   ) -> URLSessionTask {
     let query = guids.joined(separator: ",")
     let path = "/lookup/\(query)"
     return request(path, cb: cb)
   }
-  
-  // TODO: Add limit parameter
-  
+
   /// Search feeds matching the specified `term`.
   ///
   /// - parameter term: The search term, a space separated list of words, to
   /// search for.
-  /// - parameter cb: The callback to handle error and results.
+  /// - parameter completionHandler: A block with following parameters:
+  /// - parameter error: An error object, or nil.
+  /// - parameter podcasts: The podcasts matching `term` in iTunes.
+  ///
+  /// - returns: Returns the according URL session task.
   public func search(
-    _ term: String,
-    cb: @escaping (Error?, [[String : AnyObject]]?) -> Void
+    term: String,
+    completionHandler cb: @escaping (_ podcasts: [[String : AnyObject]]?, _ error: Error?) -> Void
   ) throws -> URLSessionTask {
     let t = try encodeTerm(term)
-    let path = "/search/\(t)"
+    let path = "/search?q=\(t)"
     return request(path, cb: cb)
   }
-  
-  // TODO: Add limit parameter
-  
+
   /// Request suggestions for a given search term or fragment thereof.
   ///
   /// - parameter term: The term to find suggestions for, it has to be a single
   /// space separated list of lowercase words. But usually you'd pass fragments:
   /// leading characters of eventual search terms.
-  /// - parameter cb: The callback block gets dispatched once.
+  /// - parameter limit: The maximum number of suggestions to receive.
+  /// - parameter completionHandler: A block with following parameters:
+  /// - parameter error: An error object, or nil.
+  /// - parameter terms: The suggestions.
+  ///
+  /// - returns: Returns the according URL session task.
   ///
   /// - throws: Throws if `term ` could not be encoded to a valid search term.
-  public func suggest(
-    _ term: String,
-    cb: @escaping (Error?, [String]?) -> Void
+  public func suggestions(
+    matching term: String,
+    limit: Int,
+    completionHandler cb: @escaping (_ terms: [String]?, _ error: Error?) -> Void
   ) throws -> URLSessionTask {
     let t = try encodeTerm(term)
-    let path = "/suggest/\(t)"
+    let path = "/suggest?q=\(t)&max=\(limit)"
     return client.get(path: path) { json, response, error in
       if let er = retypeError(error) {
-        cb(er, nil)
+        cb(nil, er)
       } else if let result = json as? [String] {
-        cb(nil, result)
+        cb(result, nil)
       } else {
-        cb(FanboyError.unexpectedResult(result: json), nil)
+        let er = FanboyError.unexpectedResult(result: json)
+        cb(nil, er)
       }
     }
   }
-  
+
   /// Request the version of the remote service.
   ///
-  /// - parameter cb: The callback receiving error and version string.
+  /// - parameter completionHandler: A block with following parameters:
+  /// - parameter error: An error object, or nil.
+  /// - parameter version: The version of the remote service.
+  ///
+  /// - returns: Returns the according URL session task.
   public func version(
-    _ cb: @escaping (Error?, String?) -> Void) -> URLSessionTask {
+    completionHandler cb: @escaping (_ version: String?, _ error: Error?) -> Void
+  ) -> URLSessionTask {
     return client.get(path: "/") { json, response, error in
       if let er = retypeError(error) {
-        cb(er, nil)
+        cb(nil, er)
       } else if let version = json?["version"] as? String {
-        cb(nil, version)
+        cb(version, nil)
       } else {
-        cb(FanboyError.unexpectedResult(result: json), nil)
+        let er = FanboyError.unexpectedResult(result: json)
+        cb(nil, er)
       }
     }
   }

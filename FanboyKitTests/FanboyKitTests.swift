@@ -37,7 +37,7 @@ final class InternalTests: XCTestCase {
       "abc",
       "abc",
       "abc%20def",
-      "abc%20%20def" // TODO: Should inner whitespace be removed here
+      "abc%20%20def" // Remote service is taking care of inner whitespace.
     ]
     let found = [
       "abc",
@@ -56,65 +56,65 @@ final class InternalTests: XCTestCase {
 }
 
 final class FanboyFailureTests: XCTestCase {
-  
+
   var svc: FanboyService!
-  
+
   override func setUp() {
     super.setUp()
-    
+
     let url = URL(string: "http://localhost:8385")!
     svc = freshFanboy(url as NSURL)
   }
-  
+
   override func tearDown() {
     super.tearDown()
   }
 
-  func callbackWithExpression (_ exp: XCTestExpectation) -> (Error?, Any?) -> Void {
-    func cb (_ error: Error?, result: Any?)-> Void {
+  func callbackWithExpression (_ exp: XCTestExpectation) -> (Any?, Error?) -> Void {
+    func cb (result: Any?, error: Error?) -> Void {
       let er = error as! NSError
       XCTAssertEqual(er.code, -1004)
       XCTAssertNil(result)
-      
+
       let (code, _) = svc.client.status!
       XCTAssertEqual(code, er.code)
-      
+
       exp.fulfill()
     }
     return cb
   }
-  
+
   func testSuggest() {
     let exp = self.expectation(description: "suggest")
     let cb = callbackWithExpression(exp)
-    try! svc.suggest("f", cb: cb)
+    try! svc.suggestions(matching: "f", limit: 10, completionHandler: cb)
     self.waitForExpectations(timeout: 10) { er in
       XCTAssertNil(er)
     }
   }
-  
+
   func testLookup() {
     let exp = self.expectation(description: "lookup")
     let cb = callbackWithExpression(exp)
-    svc.lookup(["528458508", "974240842"], cb: cb)
+    svc.lookup(guids: ["528458508", "974240842"], completionHandler: cb)
     self.waitForExpectations(timeout: 10) { er in
       XCTAssertNil(er)
     }
   }
-  
+
   func testSearch() {
     let exp = self.expectation(description: "search")
     let cb = callbackWithExpression(exp)
-    try! svc.search("fireball", cb: cb)
+    try! svc.search(term: "fireball", completionHandler: cb)
     self.waitForExpectations(timeout: 10) { er in
       XCTAssertNil(er)
     }
   }
-  
+
   func testVersion() {
     let exp = self.expectation(description: "version")
     let cb = callbackWithExpression(exp)
-    svc.version(cb)
+    svc.version(completionHandler: cb)
     self.waitForExpectations(timeout: 10) { er in
       XCTAssertNil(er)
     }
@@ -122,49 +122,51 @@ final class FanboyFailureTests: XCTestCase {
 }
 
 class FanboySuccessTests: XCTestCase {
-  
+
   var svc: FanboyService!
-  
+
   override func setUp() {
     super.setUp()
 
     let url = URL(string: "http://localhost:8383")!
     svc = freshFanboy(url as NSURL)
   }
-  
+
   override func tearDown() {
     svc = nil
     super.tearDown()
   }
-  
+
   func testHost() {
     XCTAssertEqual(svc.client.host, "localhost")
   }
-  
-  func testSuggest() {
-    let exp = self.expectation(description: "suggest")
-    func next() {
-      try! svc.suggest("f") { error, terms in
-        XCTAssertNil(error)
-        XCTAssert(terms!.contains("fireball"))
-        exp.fulfill()
-      }
-    }
-    try! svc.search("fireball") { error, feeds in
+
+  // MARK: Searching
+
+  func testSearch() {
+    let names = self.names
+    let exp = self.expectation(description: "search")
+    let term = "fireball"
+    try! svc.search(term: term) { feeds, error in
       XCTAssertNil(error)
-      next()
+      feeds!.forEach() { feed in
+        names.forEach() { name in
+          XCTAssertNotNil(feed[name])
+        }
+      }
+      exp.fulfill()
     }
     self.waitForExpectations(timeout: 10) { er in
       XCTAssertNil(er)
     }
   }
-  
-  func testSuggestWithInvalidQuery() {
+
+  func testSearchtWithInvalidQuery() {
     let queries = ["", " "]
     var count = 0
-    queries.forEach() { q in
+    queries.forEach() { query in
       do {
-        try svc.suggest(q) { _, _ in }
+        try svc.search(term: query) { _, _ in }
       } catch FanboyError.invalidTerm {
         count += 1
       } catch {
@@ -173,12 +175,72 @@ class FanboySuccessTests: XCTestCase {
     }
     XCTAssertEqual(count, queries.count)
   }
-  
+
+  func testSearchCancel () {
+    let svc = self.svc!
+    let exp = self.expectation(description: "search")
+    let op = try! svc.search(term: "fireball") { feeds, error in
+      defer {
+        exp.fulfill()
+      }
+      guard feeds == nil else {
+        return
+      }
+      do {
+        throw error!
+      } catch FanboyError.cancelledByUser {
+      } catch {
+        XCTFail("should be expected error")
+      }
+    }
+    delay() {
+      op.cancel()
+    }
+    self.waitForExpectations(timeout: 10) { er in
+      XCTAssertNil(er)
+    }
+  }
+
+  // MARK: Suggesting
+
+  func testSuggest() {
+    let exp = self.expectation(description: "suggest")
+    func next() {
+      try! svc.suggestions(matching: "f", limit: 10) { terms, error in
+        XCTAssertNil(error)
+        XCTAssert(terms!.contains("fireball"))
+        exp.fulfill()
+      }
+    }
+    try! svc.search(term: "fireball") { feeds, error in
+      XCTAssertNil(error)
+      next()
+    }
+    self.waitForExpectations(timeout: 10) { er in
+      XCTAssertNil(er)
+    }
+  }
+
+  func testSuggestWithInvalidQuery() {
+    let queries = ["", " "]
+    var count = 0
+    queries.forEach() { q in
+      do {
+        try svc.suggestions(matching: q, limit: 10) { _, _ in }
+      } catch FanboyError.invalidTerm {
+        count += 1
+      } catch {
+        XCTFail("should not throw unexpected error")
+      }
+    }
+    XCTAssertEqual(count, queries.count)
+  }
+
   func testSuggestCancel () {
     let svc = self.svc!
     let exp = self.expectation(description: "suggest")
     let term = "f"
-    try! svc.suggest(term) { error, terms in
+    try! svc.suggestions(matching: term, limit: 10) { terms, error in
       do {
         throw error!
       } catch FanboyError.cancelledByUser {
@@ -192,17 +254,19 @@ class FanboySuccessTests: XCTestCase {
       XCTAssertNil(er)
     }
   }
-  
+
+  // MARK: Uplooking
+
   let names = ["author", "title", "img100", "guid", "img30", "img60", "img600", "updated"]
-  
+
   func testLookup() {
     let exp = self.expectation(description: "lookup")
     let names = self.names
     let guids = ["528458508", "974240842"]
-    
+
     // These get cached rather agressively.
-    
-    svc.lookup(guids) { error, feeds in
+
+    svc.lookup(guids: guids) { feeds, error in
       XCTAssertNil(error)
       XCTAssertEqual(feeds!.count, 2)
       feeds!.forEach() { feed in
@@ -216,12 +280,12 @@ class FanboySuccessTests: XCTestCase {
       XCTAssertNil(er)
     }
   }
-  
+
   func testLookupCancel() {
     let svc = self.svc!
     let exp = self.expectation(description: "lookup")
     let guids = ["528458508", "974240842"]
-    let op = svc.lookup(guids) { error, feeds in
+    let op = svc.lookup(guids: guids) { feeds, error in
       defer {
         exp.fulfill()
       }
@@ -242,81 +306,25 @@ class FanboySuccessTests: XCTestCase {
       XCTAssertNil(er)
     }
   }
-  
-  func testSearch() {
-    let names = self.names
-    let exp = self.expectation(description: "search")
-    let term = "fireball"
-    try! svc.search(term) { error, feeds in
-      XCTAssertNil(error)
-      feeds!.forEach() { feed in
-        names.forEach() { name in
-          XCTAssertNotNil(feed[name])
-        }
-      }
-      exp.fulfill()
-    }
-    self.waitForExpectations(timeout: 10) { er in
-      XCTAssertNil(er)
-    }
-  }
-  
-  func testSearchtWithInvalidQuery() {
-    let queries = ["", " "]
-    var count = 0
-    queries.forEach() { query in
-      do {
-        try svc.search(query) { _, _ in }
-      } catch FanboyError.invalidTerm {
-        count += 1
-      } catch {
-        XCTFail("should not throw unexpected error")
-      }
-    }
-    XCTAssertEqual(count, queries.count)
-  }
-  
-  func testSearchCancel () {
-    let svc = self.svc!
-    let exp = self.expectation(description: "search")
-    let op = try! svc.search("fireball") { error, feeds in
-      defer {
-        exp.fulfill()
-      }
-      guard feeds == nil else {
-        return
-      }
-      do {
-        throw error!
-      } catch FanboyError.cancelledByUser {
-      } catch {
-        XCTFail("should be expected error")
-      }
-    }
-    delay() {
-      op.cancel()
-    }
-    self.waitForExpectations(timeout: 10) { er in
-      XCTAssertNil(er)
-    }
-  }
-  
+
+  // MARK: Version
+
   func testVersion() {
     let exp = self.expectation(description: "version")
-    svc.version { error, version in
+    svc.version { version, error in
       XCTAssertNil(error)
-      XCTAssertEqual(version, "2.0.6")
+      XCTAssertEqual(version, "3.0.0")
       exp.fulfill()
     }
     self.waitForExpectations(timeout: 10) { er in
       XCTAssertNil(er)
     }
   }
-  
+
   func testVersionCancel() {
     let svc = self.svc!
     let exp = self.expectation(description: "version")
-    let op = svc.version { error, version in
+    let op = svc.version { version, error in
       do {
         throw error!
       } catch FanboyError.cancelledByUser {
