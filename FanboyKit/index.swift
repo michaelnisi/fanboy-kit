@@ -46,7 +46,7 @@ public protocol FanboyService {
 
 /// Transform errors.
 private func retypeError(_ error: Error?) -> Error? {
-  guard let er = error as? NSError else {
+  guard let er = error as NSError? else {
     return error
   }
   switch er.code {
