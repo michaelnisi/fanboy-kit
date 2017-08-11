@@ -72,7 +72,7 @@ final class FanboyFailureTests: XCTestCase {
 
   func callbackWithExpression (_ exp: XCTestExpectation) -> (Any?, Error?) -> Void {
     func cb (result: Any?, error: Error?) -> Void {
-      let er = error as! NSError
+      let er = error! as NSError
       XCTAssertEqual(er.code, -1004)
       XCTAssertNil(result)
 
@@ -313,7 +313,7 @@ class FanboySuccessTests: XCTestCase {
     let exp = self.expectation(description: "version")
     svc.version { version, error in
       XCTAssertNil(error)
-      XCTAssertEqual(version, "3.0.0")
+      XCTAssertEqual(version, "3.0.1")
       exp.fulfill()
     }
     self.waitForExpectations(timeout: 10) { er in
