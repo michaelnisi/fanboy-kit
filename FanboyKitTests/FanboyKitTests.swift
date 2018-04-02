@@ -24,9 +24,8 @@ private func freshSession() -> URLSession {
 }
 
 private func freshFanboy(_ url: NSURL) -> Fanboy {
-  let target = DispatchQueue.main
   let session = freshSession()
-  let client = Patron(URL: url as URL, session: session, target: target)
+  let client = Patron(URL: url as URL, session: session)
   return Fanboy(client: client)
 }
 
