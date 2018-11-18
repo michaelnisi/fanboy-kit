@@ -8,6 +8,8 @@ The FanboyKit framework provides a client for the [fanboy-http](https://github.c
 
 ## Types
 
+### FanboyError
+
 ```swift
 enum FanboyError: Error {
   case unexpectedResult(result: AnyObject?)
@@ -15,6 +17,8 @@ enum FanboyError: Error {
   case invalidTerm
 }
 ```
+
+### FanboyService
 
 ```swift
 protocol FanboyService {
@@ -47,7 +51,7 @@ protocol FanboyService {
 
 ## Installation
 
-Simply integrate this framework into your Xcode workspace.
+Install FanboyKit into your Xcode workspace.
 
 ## License
 
