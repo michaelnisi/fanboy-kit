@@ -12,7 +12,7 @@ import Patron
 import Fanboy
 
 let session = URLSession(configuration: .default)
-let client = Patron(URL: url as URL, session: session)
+let client = Patron(URL: URL(string: "https://your.endpoint")!, session: session)
 let fanboy = Fanboy(client: client)
 
 try! fanboy.suggestions(matching: "a", limit: 10) { result, error in
