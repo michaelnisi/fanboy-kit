@@ -51,7 +51,7 @@ protocol FanboyService {
 
 ## Installation
 
-Install FanboyKit into your Xcode workspace.
+Integrate FanboyKit into your Xcode workspace.
 
 ## License
 
