@@ -1,10 +1,30 @@
-# FanboyKit - fanboy-http client
+# FanboyKit - consume fanboy-http API
 
 The FanboyKit framework provides a client for the [fanboy-http](https://github.com/michaelnisi/fanboy-http) service.
 
+## Example
+
+Querying iTunes for suggestions matching the term `a` limiting the result to 10.
+
+```swift
+import Foundation
+import Patron
+import Fanboy
+
+let session = URLSession(configuration: .default)
+let client = Patron(URL: url as URL, session: session)
+let fanboy = Fanboy(client: client)
+
+try! fanboy.suggestions(matching: "a", limit: 10) { result, error in
+  print(error ?? result)
+}
+```
+
+Please refer to [fanboy-http](https://github.com/michaelnisi/fanboy-http) for details.
+
 ## Dependencies
 
-- [Patron](https://github.com/michaelnisi/patron) - JSON HTTP client
+- [Patron](https://github.com/michaelnisi/patron) JSON HTTP client
 
 ## Types
 
