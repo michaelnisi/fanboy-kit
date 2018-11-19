@@ -76,7 +76,7 @@ protocol FanboyService {
 var client: JSONService { get }
 ```
 
-The client property of the `FanboyService` object gives access to the underlying [Patron](https://github.com/michaelnisi/patron)) client, providing hostname and status of the remote service.
+The client property of the `FanboyService` object gives access to the underlying [Patron](https://github.com/michaelnisi/patron) client, providing hostname and status of the remote service.
 
 ## Installation
 
