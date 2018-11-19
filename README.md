@@ -1,21 +1,22 @@
-# FanboyKit - consume fanboy-http API
+# FanboyKit
 
-The FanboyKit framework provides a client for the [fanboy-http](https://github.com/michaelnisi/fanboy-http) service.
+Search iTunes with FanboyKit. The framework provides a client for [fanboy-http](https://github.com/michaelnisi/fanboy-http), a caching proxy for the [iTunes Search API](https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/). FanboyKit is used in the [Podest](https://github.com/michaelnisi/podest) podcast app.
 
 ## Example
 
-Querying iTunes for suggestions matching the term `a` limiting the result to 10.
+Querying for suggestions matching the term `"crook"` limiting the result to 10.
 
 ```swift
 import Foundation
 import Patron
 import Fanboy
 
-let session = URLSession(configuration: .default)
-let client = Patron(URL: URL(string: "https://your.endpoint")!, session: session)
-let fanboy = Fanboy(client: client)
+let url = URL(string: "https://your.endpoint")!
+let s = URLSession(configuration: .default)
+let p = Patron(URL: url, session: s)
+let svc = Fanboy(client: p)
 
-try! fanboy.suggestions(matching: "a", limit: 10) { result, error in
+try! svc.suggestions(matching: "crook", limit: 10) { result, error in
   print(error ?? result)
 }
 ```
@@ -24,7 +25,7 @@ Please refer to [fanboy-http](https://github.com/michaelnisi/fanboy-http) for de
 
 ## Dependencies
 
-- [Patron](https://github.com/michaelnisi/patron) JSON HTTP client
+- [Patron](https://github.com/michaelnisi/patron), JSON HTTP client
 
 ## Types
 
@@ -68,6 +69,12 @@ protocol FanboyService {
   ) throws -> URLSessionTask
 }
 ```
+
+#### client
+
+- `var client: JSONService { get }`
+
+The client property of the `FanboyService` object gives access to the underlying [Patron](https://github.com/michaelnisi/patron)) client, providing hostname and status of the remote service.
 
 ## Installation
 
