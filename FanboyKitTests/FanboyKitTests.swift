@@ -18,7 +18,7 @@ private func delay(_ ms: Int64 = Int64(arc4random_uniform(10)), cb: @escaping ()
 
 private func freshSession() -> URLSession {
   let conf = URLSessionConfiguration.default
-  conf.httpShouldUsePipelining = true
+  conf.httpShouldUsePipelining = false
   conf.requestCachePolicy = .reloadIgnoringLocalCacheData
   return URLSession(configuration: conf)
 }
