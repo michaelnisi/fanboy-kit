@@ -174,11 +174,11 @@
 			};
 			buildConfigurationList = 4CCC8BC91C022B1D00120D07 /* Build configuration list for PBXProject "FanboyKit" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				English,
 				en,
+				Base,
 			);
 			mainGroup = 4CCC8BC51C022B1D00120D07;
 			productRefGroup = 4CCC8BD01C022B1D00120D07 /* Products */;
