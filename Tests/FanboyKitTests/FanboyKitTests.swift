@@ -312,7 +312,7 @@ class FanboySuccessTests: XCTestCase {
     let exp = self.expectation(description: "version")
     svc.version { version, error in
       XCTAssertNil(error)
-      XCTAssertEqual(version, "4.0.1")
+      XCTAssertEqual(version, "5.0.0")
       exp.fulfill()
     }
     self.waitForExpectations(timeout: 10) { er in
