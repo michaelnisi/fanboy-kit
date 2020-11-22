@@ -1,6 +1,6 @@
 # FanboyKit
 
-Search iTunes with FanboyKit. The framework provides a client for [fanboy-http](https://github.com/michaelnisi/fanboy-http), a caching proxy for the [iTunes Search API](https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/). FanboyKit is used in the [Podest](https://github.com/michaelnisi/podest) podcast app.
+Search iTunes with FanboyKit. This Swift package provides a client for [fanboy-http](https://github.com/michaelnisi/fanboy-http), a caching proxy for the [iTunes Search API](https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/). FanboyKit is used in the [Podest](https://github.com/michaelnisi/podest) podcast app.
 
 ## Example
 
@@ -22,10 +22,6 @@ try! svc.suggestions(matching: "crook", limit: 10) { result, error in
 ```
 
 Please refer to [fanboy-http](https://github.com/michaelnisi/fanboy-http) for details.
-
-## Dependencies
-
-- [Patron](https://github.com/michaelnisi/patron), JSON HTTP client
 
 ## Types
 
@@ -78,9 +74,17 @@ var client: JSONService { get }
 
 The client property of the `FanboyService` object gives access to the underlying [Patron](https://github.com/michaelnisi/patron) client, providing hostname and status of the remote service.
 
-## Installation
+## Test
 
-Integrate FanboyKit into your Xcode workspace.
+With **fanboy-http** running, do:
+
+```
+$ swift test
+```
+
+## Install
+
+📦 Add `https://github.com/michaelnisi/fanboy-kit`  to your package manifest.
 
 ## License
 

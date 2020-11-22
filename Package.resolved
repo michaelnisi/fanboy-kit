@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "Patron",
-        "repositoryURL": "/Users/michael/swift/patron",
+        "repositoryURL": "https://github.com/michaelnisi/patron",
         "state": {
-          "branch": "pkg",
-          "revision": "adf9c22a192929dbde634a353884d79003c88005",
-          "version": null
+          "branch": null,
+          "revision": "b2e1b6e385c27da926f4d4743e1f084bf9ea70d6",
+          "version": "11.0.0"
         }
       }
     ]
