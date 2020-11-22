@@ -9,7 +9,7 @@ Querying for suggestions matching the term `"crook"` limiting the result to 10.
 ```swift
 import Foundation
 import Patron
-import Fanboy
+import FanboyKit
 
 let url = URL(string: "https://your.endpoint")!
 let s = URLSession(configuration: .default)
